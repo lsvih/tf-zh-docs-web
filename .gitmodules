@@ -1,0 +1,8 @@
+[submodule "zh-hans"]
+	path = zh-hans
+	url = https://github.com/xitu/tensorflow-docs.git
+	branch = zh-hans
+[submodule "origin-doc"]
+	path = origin-doc
+	url = https://github.com/xitu/tensorflow-docs.git
+	branch = v1.7
