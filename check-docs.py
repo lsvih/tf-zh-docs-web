@@ -13,8 +13,8 @@ def head_count(token, level):
 
 
 def cmp_md_struct(file1: str, file2: str) -> None:
-    token1 = parser.parse(open(file1, encoding="utf-8").read())
-    token2 = parser.parse(open(file2, encoding="utf-8").read())
+    token1, token2 = parser.parse(open(file1, encoding="utf-8").read()), parser.parse(
+        open(file2, encoding="utf-8").read())
     for level in range(4):
         if head_count(token1, level) != head_count(token2, level):
             print("diff struct found, level %d in %s and %s" % (level, file1, file2))
