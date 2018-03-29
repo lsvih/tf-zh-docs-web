@@ -12,17 +12,23 @@ $(document).ready(() => {
             }
         })
     }
+    // 渲染顶部导航
+    head.forEach((e, i) => {
+        $(".navbar-nav").html($(".navbar-nav").html() + headNav(e.name, e.link, e.selected))
+    })
 });
 
 
 function firstClassChildNav(name, link) {
     return `
-    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-        <span>${name}</span>
-        <a class="d-flex align-items-center text-muted" href="${link}">
-            <span data-feather="plus-circle"></span>
+<ul class="nav flex-column mb-2">
+<li class="nav-item">
+            <a class="nav-link" href="${link}">
+            <span data-feather="file-text"></span>
+        ${name}
         </a>
-    </h6>`
+        </li>
+</ul>`
 }
 
 function parentNav(name, child) {
@@ -39,13 +45,22 @@ function parentNav(name, child) {
         $(item.getElementsByClassName("nav")[0]).append(childNav(e.title, e.link))
     })
     return item.innerHTML
+}
 
-    function childNav(name, link) {
-        return `<li class="nav-item">
+function childNav(name, link) {
+    return `<li class="nav-item">
             <a class="nav-link" href="${link}">
             <span data-feather="file-text"></span>
         ${name}
         </a>
         </li>`
-    }
+}
+
+function headNav(name, link, select) {
+    return `
+    <li class="nav-item ${select === 1 ? 'active' : ''}">
+                <a class="nav-link" href="${link}">${name}
+                    ${select === 1 ? "<span class=\"sr-only\">(current)</span>" : ""}
+                </a>
+            </li>`
 }

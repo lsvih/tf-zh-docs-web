@@ -134,6 +134,7 @@ class Template:
         self.is_left_nav = os.path.exists(os.path.join(ZH_DOC_PATH, clazz, "leftnav_files"))
         self.template = open(TEMPLATE, encoding="utf-8").read()
         self.left_template = open(LEFT_NAV_TEMPLATE, encoding="utf-8").read()
+        self.head_template = open(HEAD_NAV_TEMPLATE, encoding="utf-8").read()
 
     def left_nav(self) -> str:
         def _get_link(filename) -> str:
@@ -184,8 +185,22 @@ class Template:
     def render_left_nav(self, nav: list) -> str:
         return self.left_template.format(data=nav)
 
+    def build_header(self):
+        def _get_path_title(path) -> str:
+            return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
+                open(os.path.join(ZH_DOC_PATH, path, "index.md"), encoding="utf-8").read())))[0]["text"]
+
+        return [{"link": "/%s/index.html" % sub_path, "name": _get_path_title(sub_path),
+                 "selected": int(sub_path == self.clazz)} for
+                sub_path in os.listdir(ZH_DOC_PATH) if
+                os.path.exists(os.path.join(ZH_DOC_PATH, sub_path, "index.md"))]
+
+    def render_head_nav(self) -> str:
+        return self.head_template.format(data=self.build_header())
+
     def render(self):
-        return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav())
+        return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav(),
+                                    head_nav=self.render_head_nav())
 
 
 def render(markdown: str, path: str, name: str) -> str:
