@@ -132,13 +132,57 @@ class Template:
         self.en_name = name
         self.content = content
         self.is_left_nav = os.path.exists(os.path.join(ZH_DOC_PATH, clazz, "leftnav_files"))
-        self.template = open(TEMPLATE).read()
+        self.template = open(TEMPLATE, encoding="utf-8").read()
+        self.left_template = open(LEFT_NAV_TEMPLATE, encoding="utf-8").read()
 
-    def left_nav(self):
+    def left_nav(self) -> str:
+        def _get_link(filename) -> str:
+            filearr = filename.split(":")
+            if len(filearr) == 2:
+                return filearr[0]
+            else:
+                return filename
+
+        def _get_title(filename) -> str:
+            filearr = filename.split(":")
+            if len(filearr) == 2:
+                return filearr[1]
+            else:
+                return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
+                    open(os.path.join(ZH_DOC_PATH, self.clazz, filename), encoding="utf-8").read())))[0]["text"]
+
+        nav = []
+        sub_flag = False
+        is_parent, get_parent_title = re.compile(r"#{3}"), re.compile(r"#{3}(.+?)\n")
         if self.is_left_nav:
-            return open(os.path.join(ZH_DOC_PATH, self.clazz, "leftnav_files"), encoding="utf-8").read()
+            origin = open(os.path.join(ZH_DOC_PATH, self.clazz, "leftnav_files"), encoding="utf-8").readlines()
+            for line in origin:
+                if is_parent.match(line):
+                    sub_flag = True
+                    nav.append({"type": "parent", "title": get_parent_title.match(line).group(1).replace("\n", ""),
+                                "sub_class": []})
+                elif line == "\n" or line == ">>>\n":
+                    sub_flag = False
+                else:
+                    if sub_flag:
+                        nav[-1]["sub_class"].append({"link": _get_link(line.replace("\n", ""))})
+                    else:
+                        nav.append({"type": "child", "link": _get_link(line.replace("\n", ""))})
+            # Generated Navigation Tree, find title for each document.
+            for i, ele in enumerate(nav):
+                if ele["type"] == "child":
+                    nav[i]["title"] = _get_title(ele["link"])
+                    nav[i]["link"] = ele["link"].replace(".md", ".html")
+                else:
+                    for j, sub_ele in enumerate(ele["sub_class"]):
+                        nav[i]["sub_class"][j]["title"] = _get_title(sub_ele["link"])
+                        nav[i]["sub_class"][j]["link"] = sub_ele["link"].replace(".md", ".html")
+            return self.render_left_nav(nav)
         else:
             return ""
+
+    def render_left_nav(self, nav: list) -> str:
+        return self.left_template.format(data=nav)
 
     def render(self):
         return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav())
@@ -181,3 +225,5 @@ if __name__ == "__main__":
                         render(open(old_path, encoding="utf-8").read(), os.path.split(root)[1], name=shot_name))
                 else:
                     open(new_path, 'wb').write(open(old_path, "rb").read())
+    os.system("cp -r assets dist/")
+    print("Done!")
