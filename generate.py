@@ -50,6 +50,19 @@ class CustomRenderer(mistune.Renderer):
     def super_link(self, link, text):
         return '<a href="%s">%s</a>' % (link, text)
 
+    def table(self, header, body):
+        return ('<div class="table-wrapper"><table>\n<thead>%s</thead>\n'
+                '<tbody>\n%s</tbody>\n</table></div>\n') % (header, body)
+
+
+class CustomBlockLexer(mistune.BlockLexer):
+    default_rules = [
+        'newline', 'hrule', 'list_block', 'fences', 'heading',
+        'nptable', 'lheading', 'block_quote',
+        'block_code', 'block_html', 'def_links',
+        'def_footnotes', 'table', 'paragraph', 'text'
+    ]
+
 
 class CustomInlineLexer(mistune.InlineLexer):
     def __init__(self, renderer, **kwargs):
@@ -180,8 +193,9 @@ class Template:
                 else:
                     for j, sub_ele in enumerate(ele["sub_class"]):
                         nav[i]["sub_class"][j]["title"] = _get_title(sub_ele["link"])
-                        nav[i]["sub_class"][j]["link"] = "//" + self.domain + "/" + self.clazz + "/" + sub_ele["link"].replace(".md",
-                                                                                                            ".html")
+                        nav[i]["sub_class"][j]["link"] = "//" + self.domain + "/" + self.clazz + "/" + sub_ele[
+                            "link"].replace(".md",
+                                            ".html")
             return self.render_left_nav(nav)
         else:
             return ""
@@ -209,11 +223,12 @@ class Template:
 
 def render(markdown: str, path: str, name: str, domain: str) -> str:
     md_renderer = CustomRenderer(escape=False, hard_wrap=True)
+    md_block_lexer = CustomBlockLexer()
     md_inline_lexer = CustomInlineLexer(md_renderer)
     md_inline_lexer.enable_super_link()
     md_inline_lexer.file_path = path
     md_inline_lexer.domain = domain
-    md_parse = mistune.Markdown(renderer=md_renderer, inline=md_inline_lexer, hard_wrap=False)
+    md_parse = mistune.Markdown(renderer=md_renderer, inline=md_inline_lexer, block=md_block_lexer, hard_wrap=False)
     content = md_parse(markdown)
     html_renderer = Template(content=content, clazz=path, name=name, domain=domain)
     return html_renderer.render()
