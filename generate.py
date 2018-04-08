@@ -55,6 +55,7 @@ class CustomInlineLexer(mistune.InlineLexer):
     def __init__(self, renderer, **kwargs):
         super().__init__(renderer, **kwargs)
         self.file_path = None
+        self.domain = None
 
     def enable_super_link(self):
         self.rules.super_link = re.compile(r'.*@{(.+?)}.*', re.S)
@@ -116,7 +117,7 @@ class CustomInlineLexer(mistune.InlineLexer):
                             return self.renderer.super_link(url, name)
                 name = list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
                     open(os.path.join(ZH_DOC_PATH, url + ".md"), encoding="utf-8").read())))[0]["text"]
-                url = "../" + url + ".html"
+                url = "//" + self.domain + "/" + url + ".html"
                 if param != "":
                     url += "#" + param
             return self.renderer.super_link(url, name)
@@ -175,11 +176,12 @@ class Template:
             for i, ele in enumerate(nav):
                 if ele["type"] == "child":
                     nav[i]["title"] = _get_title(ele["link"])
-                    nav[i]["link"] = ele["link"].replace(".md", ".html")
+                    nav[i]["link"] = "//" + self.domain + "/" + self.clazz + "/" + ele["link"].replace(".md", ".html")
                 else:
                     for j, sub_ele in enumerate(ele["sub_class"]):
                         nav[i]["sub_class"][j]["title"] = _get_title(sub_ele["link"])
-                        nav[i]["sub_class"][j]["link"] = sub_ele["link"].replace(".md", ".html")
+                        nav[i]["sub_class"][j]["link"] = "//" + self.domain + "/" + self.clazz + "/" + sub_ele["link"].replace(".md",
+                                                                                                            ".html")
             return self.render_left_nav(nav)
         else:
             return ""
@@ -192,7 +194,7 @@ class Template:
             return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
                 open(os.path.join(ZH_DOC_PATH, path, "index.md"), encoding="utf-8").read())))[0]["text"]
 
-        return [{"link": "/%s/index.html" % sub_path, "name": _get_path_title(sub_path),
+        return [{"link": "//%s/%s/index.html" % (domain, sub_path), "name": _get_path_title(sub_path),
                  "selected": int(sub_path == self.clazz)} for
                 sub_path in os.listdir(ZH_DOC_PATH) if
                 os.path.exists(os.path.join(ZH_DOC_PATH, sub_path, "index.md"))]
@@ -210,6 +212,7 @@ def render(markdown: str, path: str, name: str, domain: str) -> str:
     md_inline_lexer = CustomInlineLexer(md_renderer)
     md_inline_lexer.enable_super_link()
     md_inline_lexer.file_path = path
+    md_inline_lexer.domain = domain
     md_parse = mistune.Markdown(renderer=md_renderer, inline=md_inline_lexer, hard_wrap=False)
     content = md_parse(markdown)
     html_renderer = Template(content=content, clazz=path, name=name, domain=domain)
