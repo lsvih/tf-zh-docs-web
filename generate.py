@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 
 import mistune
 from bs4 import BeautifulSoup as bs
@@ -125,12 +126,13 @@ class CustomInlineLexer(mistune.InlineLexer):
 
 
 class Template:
-    def __init__(self, content, clazz, name):
+    def __init__(self, content, clazz, name, domain):
         soup = bs(content, "html5lib")
         self.title = soup.h1.get_text()
         self.clazz = clazz
         self.en_name = name
         self.content = content
+        self.domain = domain
         self.is_left_nav = os.path.exists(os.path.join(ZH_DOC_PATH, clazz, "leftnav_files"))
         self.template = open(TEMPLATE, encoding="utf-8").read()
         self.left_template = open(LEFT_NAV_TEMPLATE, encoding="utf-8").read()
@@ -200,21 +202,25 @@ class Template:
 
     def render(self):
         return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav(),
-                                    head_nav=self.render_head_nav())
+                                    head_nav=self.render_head_nav(), domain=self.domain)
 
 
-def render(markdown: str, path: str, name: str) -> str:
+def render(markdown: str, path: str, name: str, domain: str) -> str:
     md_renderer = CustomRenderer(escape=False, hard_wrap=True)
     md_inline_lexer = CustomInlineLexer(md_renderer)
     md_inline_lexer.enable_super_link()
     md_inline_lexer.file_path = path
     md_parse = mistune.Markdown(renderer=md_renderer, inline=md_inline_lexer, hard_wrap=False)
     content = md_parse(markdown)
-    html_renderer = Template(content=content, clazz=path, name=name)
+    html_renderer = Template(content=content, clazz=path, name=name, domain=domain)
     return html_renderer.render()
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 generate.py your-domain")
+        exit()
+    domain = sys.argv[1]
     black_list = [".git", "leftnav_files", "README.txt", "README.md"]
     for (root, dirs, files) in os.walk(ZH_DOC_PATH):
         new_root = root.replace(ZH_DOC_PATH, GENERATE_PATH, 1)
@@ -237,7 +243,8 @@ if __name__ == "__main__":
                 new_path = os.path.join(new_root, new_name)
                 if new_name[-4:] == "html":
                     open(new_path, 'w', encoding="utf-8").write(
-                        render(open(old_path, encoding="utf-8").read(), os.path.split(root)[1], name=shot_name))
+                        render(open(old_path, encoding="utf-8").read(), os.path.split(root)[1], name=shot_name,
+                               domain=domain))
                 else:
                     open(new_path, 'wb').write(open(old_path, "rb").read())
     os.system("cp -r assets dist/")
