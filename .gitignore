@@ -102,3 +102,6 @@ ENV/
 
 # idea files
 .idea
+
+# sensitive file
+secret
