@@ -3,6 +3,7 @@ import re
 import sys
 
 import mistune
+import requests
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm
 
@@ -38,6 +39,8 @@ def find_dir(string, path):
     for _path, _, files in os.walk(path):
         if string + ".md" in files:
             return os.path.join(_path, string)
+        if string == _path.split("/")[-1]:
+            return _path
     raise Exception("couldn't find file: %s" % (string))
 
 
@@ -86,7 +89,6 @@ class CustomInlineLexer(mistune.InlineLexer):
                         "/"),
                     "<code>%s</code>" % re.sub(r"\$.+", "", sentence))
             elif "tf." in sentence or "tfdbg." in sentence:
-
                 return self.renderer.super_link(
                     "https://www.tensorflow.org/api_docs/python/" + re.sub(r"\$.+", "", sentence).replace(".", "/"),
                     "<code>%s</code>" % re.sub(r"\$.+", "", sentence))
@@ -151,6 +153,7 @@ class Template:
         self.template = open(TEMPLATE, encoding="utf-8").read()
         self.left_template = open(LEFT_NAV_TEMPLATE, encoding="utf-8").read()
         self.head_template = open(HEAD_NAV_TEMPLATE, encoding="utf-8").read()
+        self.footer_template = open(FOOTER_TEMPLATE, encoding="utf-8").read()
 
     def left_nav(self) -> str:
         def _get_link(filename) -> str:
@@ -216,9 +219,26 @@ class Template:
     def render_head_nav(self) -> str:
         return self.head_template.format(data=self.build_header())
 
+    def render_footer(self) -> str:
+        def _get_contributors(url: str) -> str:
+            contributor_list = [{commit["author"]["login"]: commit["author"]["avatar_url"]}
+                                if commit["author"] is not None else
+                                {commit["commit"]["author"]["name"]: ""}
+                                for commit in requests.get(
+                    url="%s/commits?path=%s" % (GIT_API, url),
+                    headers={'Authorization': 'token %s' % open("secret").read()}).json()]
+            return str([i for n, i in enumerate(contributor_list) if i not in contributor_list[n + 1:]])
+
+        file_path = os.path.join(ZH_DOC_PATH, "%s/%s.md" % (self.clazz, self.en_name))
+        if not os.path.exists(file_path):
+            file_path = find_dir("%s" % self.clazz, ZH_DOC_PATH) + "/" + self.en_name + ".md"
+        url = REMOTE_ZH_DOC_URL + file_path[1:]
+        path = file_path.replace(ZH_DOC_PATH, "")
+        return self.footer_template.format(url=url, domain=self.domain, contributors=_get_contributors(path))
+
     def render(self):
         return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav(),
-                                    head_nav=self.render_head_nav(), domain=self.domain)
+                                    head_nav=self.render_head_nav(), domain=self.domain, footer=self.render_footer())
 
 
 def render(markdown: str, path: str, name: str, domain: str) -> str:
