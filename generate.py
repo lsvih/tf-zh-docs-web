@@ -272,16 +272,16 @@ if __name__ == "__main__":
 
         for f in tqdm(files):
             if f not in black_list:
-                (shot_name, extension) = os.path.splitext(f)
+                (short_name, extension) = os.path.splitext(f)
                 old_path = os.path.join(root, f)
                 if root == os.path.join(ZH_DOC_PATH, "images"):
-                    new_name = shot_name + extension
+                    new_name = short_name + extension
                 else:
-                    new_name = shot_name + ".html"
+                    new_name = short_name + ".html"
                 new_path = os.path.join(new_root, new_name)
                 if new_name[-4:] == "html":
                     open(new_path, 'w', encoding="utf-8").write(
-                        render(open(old_path, encoding="utf-8").read(), os.path.split(root)[1], name=shot_name,
+                        render(open(old_path, encoding="utf-8").read(), os.path.split(root)[1], name=short_name,
                                domain=domain))
                 else:
                     open(new_path, 'wb').write(open(old_path, "rb").read())
