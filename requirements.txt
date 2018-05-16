@@ -2,3 +2,4 @@ requests
 tqdm
 bs4
 mistune
+mistune_contrib

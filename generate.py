@@ -2,9 +2,10 @@ import os
 import re
 import sys
 
-import mistune
 import requests
 from bs4 import BeautifulSoup as bs
+from mistune import Markdown, BlockLexer, InlineLexer, Renderer
+from mistune_contrib.toc import TocMixin
 from tqdm import tqdm
 
 from config import *
@@ -49,7 +50,7 @@ def use_origin_url(key):
     return dic.get(key)
 
 
-class CustomRenderer(mistune.Renderer):
+class CustomRenderer(TocMixin, Renderer):
     def super_link(self, link, text):
         return '<a href="%s">%s</a>' % (link, text)
 
@@ -58,7 +59,7 @@ class CustomRenderer(mistune.Renderer):
                 '<tbody>\n%s</tbody>\n</table></div>\n') % (header, body)
 
 
-class CustomBlockLexer(mistune.BlockLexer):
+class CustomBlockLexer(BlockLexer):
     default_rules = [
         'newline', 'hrule', 'list_block', 'fences', 'heading',
         'nptable', 'lheading', 'block_quote',
@@ -67,7 +68,7 @@ class CustomBlockLexer(mistune.BlockLexer):
     ]
 
 
-class CustomInlineLexer(mistune.InlineLexer):
+class CustomInlineLexer(InlineLexer):
     def __init__(self, renderer, **kwargs):
         super().__init__(renderer, **kwargs)
         self.file_path = None
@@ -105,7 +106,7 @@ class CustomInlineLexer(mistune.InlineLexer):
                         except Exception:
                             url, name = use_origin_url(sentence.split("$")[1])
                             return self.renderer.super_link(url, name)
-                    name = list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
+                    name = list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, BlockLexer().parse(
                         open(os.path.join(ZH_DOC_PATH, url + ".md"), encoding="utf-8").read())))[0]["text"]
                 else:
                     if "#" in sentence:
@@ -130,7 +131,7 @@ class CustomInlineLexer(mistune.InlineLexer):
                         except Exception:
                             url, name = use_origin_url(sentence.split("$")[1])
                             return self.renderer.super_link(url, name)
-                name = list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
+                name = list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, BlockLexer().parse(
                     open(os.path.join(ZH_DOC_PATH, url + ".md"), encoding="utf-8").read())))[0]["text"]
                 url = "//" + self.domain + "/" + url + ".html"
                 if param != "":
@@ -142,13 +143,14 @@ class CustomInlineLexer(mistune.InlineLexer):
 
 
 class Template:
-    def __init__(self, content, clazz, name, domain):
+    def __init__(self, content, clazz, name, domain, toc):
         soup = bs(content, "html5lib")
         self.title = soup.h1.get_text()
         self.clazz = clazz
         self.en_name = name
         self.content = content
         self.domain = domain
+        self.toc = toc
         self.is_left_nav = os.path.exists(os.path.join(ZH_DOC_PATH, clazz, "leftnav_files"))
         self.template = open(TEMPLATE, encoding="utf-8").read()
         self.left_template = open(LEFT_NAV_TEMPLATE, encoding="utf-8").read()
@@ -168,7 +170,7 @@ class Template:
             if len(filearr) == 2:
                 return filearr[1]
             else:
-                return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
+                return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, BlockLexer().parse(
                     open(os.path.join(ZH_DOC_PATH, self.clazz, filename), encoding="utf-8").read())))[0]["text"]
 
         nav = []
@@ -208,7 +210,7 @@ class Template:
 
     def build_header(self):
         def _get_path_title(path) -> str:
-            return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, mistune.BlockLexer().parse(
+            return list(filter(lambda x: x["type"] == "heading" and x["level"] == 1, BlockLexer().parse(
                 open(os.path.join(ZH_DOC_PATH, path, "index.md"), encoding="utf-8").read())))[0]["text"]
 
         return [{"link": "//%s/%s/index.html" % (domain, sub_path), "name": _get_path_title(sub_path),
@@ -237,7 +239,7 @@ class Template:
         return self.footer_template.format(url=url, domain=self.domain, contributors=_get_contributors(path))
 
     def render(self):
-        return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav(),
+        return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav(), toc=self.toc,
                                     head_nav=self.render_head_nav(), domain=self.domain, footer=self.render_footer())
 
 
@@ -248,9 +250,13 @@ def render(markdown: str, path: str, name: str, domain: str) -> str:
     md_inline_lexer.enable_super_link()
     md_inline_lexer.file_path = path
     md_inline_lexer.domain = domain
-    md_parse = mistune.Markdown(renderer=md_renderer, inline=md_inline_lexer, block=md_block_lexer, hard_wrap=False)
+    md_parse = Markdown(renderer=md_renderer, inline=md_inline_lexer, block=md_block_lexer, hard_wrap=False)
+    md_renderer.reset_toc()
     content = md_parse(markdown)
-    html_renderer = Template(content=content, clazz=path, name=name, domain=domain)
+    toc = ""
+    if md_renderer.toc_count > 1:
+        toc = md_renderer.render_toc(level=2)
+    html_renderer = Template(content=content, clazz=path, name=name, domain=domain, toc=toc)
     return html_renderer.render()
 
 
