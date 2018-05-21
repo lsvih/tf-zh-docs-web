@@ -61,9 +61,9 @@ class CustomRenderer(TocMixin, Renderer):
 
 class CustomBlockLexer(BlockLexer):
     default_rules = [
-        'newline', 'hrule', 'list_block', 'fences', 'heading',
+        'newline', 'hrule', 'list_block', 'fences','block_code', 'heading',
         'nptable', 'lheading', 'block_quote',
-        'block_code', 'block_html', 'def_links',
+        'block_html', 'def_links',
         'def_footnotes', 'table', 'paragraph', 'text'
     ]
 
