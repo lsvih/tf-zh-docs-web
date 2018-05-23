@@ -221,6 +221,8 @@ class Template:
 
     def render_footer(self) -> str:
         def _get_contributors(url: str) -> str:
+            if sys.argv[2] == "test":
+                return ""
             contributor_list = [{commit["author"]["login"]: commit["author"]["avatar_url"]}
                                 if commit["author"] is not None else
                                 {commit["commit"]["author"]["name"]: ""}
@@ -259,8 +261,8 @@ def render(markdown: str, path: str, name: str, domain: str) -> str:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 generate.py your-domain")
+    if len(sys.argv) < 2:
+        print("Usage: python3 generate.py your-domain [?test]")
         exit()
     domain = sys.argv[1]
     black_list = [".git", "leftnav_files", "README.txt", "README.md"]
