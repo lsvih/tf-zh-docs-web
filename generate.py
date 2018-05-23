@@ -221,7 +221,7 @@ class Template:
 
     def render_footer(self) -> str:
         def _get_contributors(url: str) -> str:
-            if sys.argv[2] == "test":
+            if len(sys.argv) == 3 and sys.argv[2] == "test":
                 return ""
             contributor_list = [{commit["author"]["login"]: commit["author"]["avatar_url"]}
                                 if commit["author"] is not None else
