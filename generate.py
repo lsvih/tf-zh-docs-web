@@ -61,7 +61,7 @@ class CustomRenderer(TocMixin, Renderer):
 
 class CustomBlockLexer(BlockLexer):
     default_rules = [
-        'newline', 'hrule', 'list_block', 'fences','block_code', 'heading',
+        'newline', 'hrule', 'list_block', 'fences', 'block_code', 'heading',
         'nptable', 'lheading', 'block_quote',
         'block_html', 'def_links',
         'def_footnotes', 'table', 'paragraph', 'text'
@@ -86,8 +86,7 @@ class CustomInlineLexer(InlineLexer):
             if "tensorflow::" in sentence:
                 return self.renderer.super_link(
                     "https://www.tensorflow.org/api_docs/cc/class/" + re.sub(r"\$.+", "", sentence).lower().replace(
-                        "::",
-                        "/"),
+                        "::", "/"),
                     "<code>%s</code>" % re.sub(r"\$.+", "", sentence))
             elif "tf." in sentence or "tfdbg." in sentence:
                 return self.renderer.super_link(
@@ -96,7 +95,7 @@ class CustomInlineLexer(InlineLexer):
             else:
                 param = ""
                 if len(sentence.split("$")) == 2:
-                    url = os.path.join("./", self.file_path, sentence.split("$")[1].replace(self.file_path + "/", ""))
+                    url = os.path.join(self.file_path, sentence.split("$")[1].replace(self.file_path + "/", ""))
                     if not os.path.exists(os.path.join(ZH_DOC_PATH, url + ".md")):
                         url = sentence.split("$")[1].replace(self.file_path + "/", "")
                     if not os.path.exists(os.path.join(ZH_DOC_PATH, url + ".md")):
@@ -112,7 +111,7 @@ class CustomInlineLexer(InlineLexer):
                     if "#" in sentence:
                         param = re.compile("\#(.+?)\$").findall(sentence)[0]
                         sentence = sentence.replace("#" + param, "")
-                    url = os.path.join("./", self.file_path,
+                    url = os.path.join(self.file_path,
                                        sentence.split("$")[1].replace(self.file_path + "/", "").strip().lstrip())
                     if not os.path.exists(os.path.join(ZH_DOC_PATH, url + ".md")):
                         url = sentence.split("$")[1].replace(self.file_path + "/", "")
@@ -199,8 +198,7 @@ class Template:
                     for j, sub_ele in enumerate(ele["sub_class"]):
                         nav[i]["sub_class"][j]["title"] = _get_title(sub_ele["link"])
                         nav[i]["sub_class"][j]["link"] = "//" + self.domain + "/" + self.clazz + "/" + sub_ele[
-                            "link"].replace(".md",
-                                            ".html")
+                            "link"].replace(".md", ".html")
             return self.render_left_nav(nav)
         else:
             return ""
@@ -219,7 +217,7 @@ class Template:
                 os.path.exists(os.path.join(ZH_DOC_PATH, sub_path, "index.md"))]
 
     def render_head_nav(self) -> str:
-        return self.head_template.format(data=self.build_header())
+        return self.head_template.format(data=self.build_header(), index=self.domain)
 
     def render_footer(self) -> str:
         def _get_contributors(url: str) -> str:
