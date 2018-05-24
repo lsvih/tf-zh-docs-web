@@ -204,7 +204,7 @@ class Template:
             return ""
 
     def render_left_nav(self, nav: list) -> str:
-        return self.left_template.format(data=nav)
+        return self.left_template.format(data=str(nav)[1:-1])
 
     def build_header(self):
         def _get_path_title(path) -> str:
@@ -217,7 +217,7 @@ class Template:
                 os.path.exists(os.path.join(ZH_DOC_PATH, sub_path, "index.md"))]
 
     def render_head_nav(self) -> str:
-        return self.head_template.format(data=self.build_header(), index=self.domain)
+        return self.head_template.format(data=str(self.build_header())[1:-1], index=self.domain)
 
     def render_footer(self) -> str:
         def _get_contributors(url: str) -> str:
@@ -236,7 +236,7 @@ class Template:
             file_path = find_dir("%s" % self.clazz, ZH_DOC_PATH) + "/" + self.en_name + ".md"
         url = REMOTE_ZH_DOC_URL + file_path[1:]
         path = file_path.replace(ZH_DOC_PATH, "")
-        return self.footer_template.format(url=url, domain=self.domain, contributors=_get_contributors(path))
+        return self.footer_template.format(url=url, domain=self.domain, contributors=str(_get_contributors(path))[1:-1])
 
     def render(self):
         return self.template.format(title=self.title, content=self.content, left_nav=self.left_nav(), toc=self.toc,
